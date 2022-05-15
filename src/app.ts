@@ -1,10 +1,12 @@
 import express from 'express'
 import multer from 'multer'
+import { SimulaProtocol } from './controller/simulaProtocol'
 // import cors from 'cors'
 
 class App {
   public express: express.Application
   private fileTypes: string[]
+  private sp = new SimulaProtocol()
 
   public constructor () {
     this.fileTypes = [
@@ -23,6 +25,14 @@ class App {
     // this.express.use(cors)
   }
 
+  private async sendFile (protocol: number, buffer: Buffer): Promise<any> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ protocol, buffer })
+      }, 3000)
+    })
+  }
+
   private routes (): void {
     const upload = multer({})
 
@@ -33,7 +43,7 @@ class App {
     this.express.post(
       '/upload',
       upload.single('file'),
-      (req: express.Request, res: express.Response) => {
+      async (req: express.Request, res: express.Response) => {
         const { file, body } = req
 
         if (Object.keys(body).length === 0) {
@@ -53,11 +63,15 @@ class App {
             erro: 'O tipo de arquivo de imagem enviado não é permitido'
           })
         }
+        let res1
 
-        console.log({ file })
+        res1 = await this.sp.getProtocol()
+        console.log({ protocol: res1.protocol })
+        res1 = await this.sendFile(res1.protocol, file.buffer)
+        console.log({ res1 })
         return res
           .status(200)
-          .send({ body, message: `${file.originalname} enviada com sucesso` })
+          .send({ body, message: `${file.originalname} enviada com sucesso`, protocol: res1.protocol })
       }
     )
   }
